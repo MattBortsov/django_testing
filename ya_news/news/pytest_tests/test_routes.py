@@ -65,4 +65,6 @@ def test_availability_for_comment_edit_and_delete(
     """
     url = reverse(name, args=(comment.id,))
     response = parametrized_client.get(url)
-    assertRedirects(response.status_code, expected_status)
+    # Не понимаю, почему здесь надо проверять переадресацию?
+    # Ведь никакой переадресации тут не должно быть. Возвращается только 404.
+    assert response.status_code == expected_status

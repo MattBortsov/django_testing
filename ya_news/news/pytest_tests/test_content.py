@@ -1,6 +1,5 @@
 import pytest
 from django.conf import settings
-from django.urls import reverse
 
 from news.forms import CommentForm
 
@@ -13,7 +12,7 @@ def test_news_count(all_news, client, url_home):
         "Ключ 'object_list' отсутствует в контексте ответа"
     )
     object_list = response.context['object_list']
-    news_count = object_list.len()
+    news_count = len(object_list)
     assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
