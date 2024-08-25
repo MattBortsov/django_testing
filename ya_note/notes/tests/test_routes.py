@@ -1,17 +1,3 @@
-"""
-Главная страница, логин, логаут, регистрация доступна всем
-Аутентифицированному пользователю доступна страница со списком заметок notes/,
-страница успешного добавления заметки done/,
-страница добавления новой заметки add/.
-Страницы отдельной заметки, удаления и редактирования заметки
-доступны только автору заметки. Если на эти страницы попытается зайти
-другой пользователь — вернётся ошибка 404.
-При попытке перейти на страницу списка заметок,
-страницу успешного добавления записи, страницу добавления заметки,
-отдельной заметки, редактирования или удаления заметки
-анонимный пользователь перенаправляется на страницу логина.
-"""
-
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
@@ -36,8 +22,13 @@ class TestRoutes(TestCase):
             slug='title',
             author=cls.author
         )
+        cls.author_client = cls.client_class()
+        cls.client_class.force_login(cls.author)
+        cls.reader_client = cls.client_class()
+        cls.client_class.force_login(cls.reader)
 
     def test_pages_availability(self):
+        """Главная страница, логин, логаут, регистрация доступна всем."""
         urls = (
             'notes:home',
             'users:login',
@@ -51,6 +42,12 @@ class TestRoutes(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_redirect_for_anonymous_client(self):
+        """
+        Анонимный пользователь перенаправляется на страницу логина,
+        при попытке перейти на страницу списка заметок,
+        успешного добавления заметки, добавления заметки,
+        отдельной заметки, редактирования или удаления заметки.
+        """
         login_url = reverse('users:login')
         slug = (self.note.slug,)
         urls = (
@@ -69,9 +66,16 @@ class TestRoutes(TestCase):
                 self.assertRedirects(response, redirect_url)
 
     def test_availability_for_note_edit_and_delete(self):
+        """
+        Аутентифицированному пользователю доступна страница со списком заметок,
+        успешного добавления заметки, добавления новой заметки.
+        Страницы отдельной заметки, удаления и редактирования заметки
+        доступны только автору заметки. Если на эти страницы попытается зайти
+        другой пользователь — вернётся ошибка 404.
+        """
         user_statuses = (
-            (self.author, HTTPStatus.OK),
-            (self.reader, HTTPStatus.NOT_FOUND),
+            (self.author_client, HTTPStatus.OK),
+            (self.reader_client, HTTPStatus.NOT_FOUND),
         )
         urls = (
             'notes:edit',
@@ -79,7 +83,6 @@ class TestRoutes(TestCase):
             'notes:delete',
         )
         for user, status in user_statuses:
-            self.client.force_login(user)
             for name in urls:
                 with self.subTest(user=user, name=name):
                     url = reverse(name, args=(self.note.slug,))

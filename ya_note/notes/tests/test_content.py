@@ -1,10 +1,3 @@
-"""
-Отдельная заметка передаётся на страницу со списком заметок в списке
-object_list в словаре context;
-В список заметок одного пользователя не попадают заметки другого пользователя;
-На страницы создания и редактирования заметки передаются формы.
-"""
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -28,22 +21,30 @@ class TestContent(TestCase):
             slug='title',
             author=cls.author
         )
+        cls.author_client = cls.client_class()
+        cls.author_client.force_login(cls.author)
+        cls.not_author_client = cls.client_class()
+        cls.not_author_client.force_login(cls.not_author)
 
-    def test_note_in_object_list_for_author(self):
-        self.client.force_login(self.author)
+    def test_note_in_object_list_for_users(self):
+        """
+        В список заметок одного пользователя
+        не попадают заметки другого пользователя.
+        Отдельная заметка передаётся на страницу со списком заметок.
+        """
+        clients = (
+            (self.author_client, True),
+            (self.not_author_client, False)
+        )
         url = reverse('notes:list')
-        response = self.client.get(url)
-        self.assertIn('object_list', response.context)
-        self.assertIn(self.note, response.context['object_list'])
-
-    def test_note_not_in_object_list_for_non_author(self):
-        self.client.force_login(self.not_author)
-        url = reverse('notes:list')
-        response = self.client.get(url)
-        self.assertNotIn(self.note, response.context['object_list'])
+        for client, expected_status in clients:
+            with self.subTest(client=client):
+                response = client.get(url)
+                object_list = response.context.get('object_list', [])
+                self.assertIs(self.note in object_list, expected_status)
 
     def test_add_edit_note_page_contains_form(self):
-        self.client.force_login(self.author)
+        """На страницы создания и редактирования заметки передаются формы."""
         urls = (
             ('notes:add', None),
             ('notes:edit', (self.note.slug,))
@@ -51,6 +52,6 @@ class TestContent(TestCase):
         for name, args in urls:
             with self.subTest(name=name):
                 url = reverse(name, args=args)
-                response = self.client.get(url)
+                response = self.author_client.get(url)
                 self.assertIn('form', response.context)
                 self.assertIsInstance(response.context.get('form'), NoteForm)

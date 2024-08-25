@@ -1,17 +1,7 @@
-"""
-Главная, логина, логаута, регистрации, страница отдельной новости доступны
-анонимным пользователям.
-Страницы удаления и редактирования комментария доступны автору комментария.
-При попытке перейти на страницу редактирования или удаления комментария
-анонимный пользователь перенаправляется на страницу авторизации.
-Авторизованный пользователь не может зайти на страницы редактирования
-или удаления чужих комментариев (возвращается ошибка 404).
-"""
-
-import pytest
 from http import HTTPStatus
 
 from django.urls import reverse
+import pytest
 from pytest_django.asserts import assertRedirects
 
 
@@ -27,6 +17,10 @@ from pytest_django.asserts import assertRedirects
     ),
 )
 def test_pages_availability(client, name, args):
+    """
+    Главная, логина, логаута, регистрации, страница отдельной новости доступны
+    анонимным пользователям.
+    """
     url = reverse(name, args=args)
     response = client.get(url)
     assert response.status_code == HTTPStatus.OK
@@ -39,6 +33,10 @@ def test_pages_availability(client, name, args):
 def test_redirect_for_anonymous_client_edit_delete_comment(
     name, comment, client
 ):
+    """
+    При попытке перейти на страницу редактирования или удаления комментария
+    анонимный пользователь перенаправляется на страницу авторизации.
+    """
     url = reverse(name, args=(comment.id,))
     login_url = reverse('users:login')
     expected_url = f'{login_url}?next={url}'
@@ -60,6 +58,11 @@ def test_redirect_for_anonymous_client_edit_delete_comment(
 def test_availability_for_comment_edit_and_delete(
     name, comment, parametrized_client, expected_status
 ):
+    """
+    Страницы удаления и редактирования комментария доступны автору комментария.
+    Авторизованный пользователь не может зайти на страницы редактирования
+    или удаления чужих комментариев (возвращается ошибка 404).
+    """
     url = reverse(name, args=(comment.id,))
     response = parametrized_client.get(url)
-    assert response.status_code == expected_status
+    assertRedirects(response.status_code, expected_status)
