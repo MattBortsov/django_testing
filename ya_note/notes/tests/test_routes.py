@@ -23,9 +23,9 @@ class TestRoutes(TestCase):
             author=cls.author
         )
         cls.author_client = cls.client_class()
-        cls.client_class.force_login(cls.author)
+        cls.author_client.force_login(cls.author)
         cls.reader_client = cls.client_class()
-        cls.client_class.force_login(cls.reader)
+        cls.reader_client.force_login(cls.reader)
 
     def test_pages_availability(self):
         """Главная страница, логин, логаут, регистрация доступна всем."""
@@ -86,5 +86,5 @@ class TestRoutes(TestCase):
             for name in urls:
                 with self.subTest(user=user, name=name):
                     url = reverse(name, args=(self.note.slug,))
-                    response = self.client.get(url)
+                    response = user.get(url)
                     self.assertEqual(response.status_code, status)
