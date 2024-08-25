@@ -56,7 +56,6 @@ def all_news():
         for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
     ]
     News.objects.bulk_create(all_news)
-    return all_news
 
 
 @pytest.fixture
@@ -66,12 +65,11 @@ def id_for_args(news):
 
 @pytest.fixture
 def comment(author, news):
-    comment = Comment.objects.create(
+    return Comment.objects.create(
         news=news,
         author=author,
         text='Some comment',
     )
-    return comment
 
 
 @pytest.fixture

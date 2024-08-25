@@ -64,17 +64,16 @@ def test_user_cant_delete_comment_of_another_user(
 
 
 def test_author_can_edit_comment(
-    author_client, comment, news, form_data, url_news_detail, url_comment_edit
+    author_client, author, comment, news, form_data,
+    url_news_detail, url_comment_edit
 ):
     """Авторизованный пользователь может редактировать свои комментарии."""
-    original_news = comment.news
-    original_author = comment.author
     response = author_client.post(url_comment_edit, form_data)
     assertRedirects(response, url_news_detail + '#comments')
     comment.refresh_from_db()
     assert comment.text == form_data['text']
-    assert comment.news == original_news
-    assert comment.author == original_author
+    assert comment.news == news
+    assert comment.author == author
 
 
 def test_user_cant_edit_comment_of_another_user(

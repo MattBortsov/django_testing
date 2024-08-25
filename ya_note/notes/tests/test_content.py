@@ -38,7 +38,7 @@ class TestContent(TestCase):
         )
         url = reverse('notes:list')
         for client, expected_status in clients:
-            with self.subTest(client=client):
+            with self.subTest(client=client, expected_status=expected_status):
                 response = client.get(url)
                 object_list = response.context.get('object_list', [])
                 self.assertIs(self.note in object_list, expected_status)
@@ -50,7 +50,7 @@ class TestContent(TestCase):
             ('notes:edit', (self.note.slug,))
         )
         for name, args in urls:
-            with self.subTest(name=name):
+            with self.subTest(name=name, args=args):
                 url = reverse(name, args=args)
                 response = self.author_client.get(url)
                 self.assertIn('form', response.context)

@@ -33,10 +33,6 @@ class TestLogic(TestCase):
             'text': 'Some text',
             'slug': 'slug'
         }
-        cls.empty_slug_data = {
-            'title': 'New Title',
-            'text': 'Some text'
-        }
 
     def test_user_can_create_note(self):
         """Залогиненный пользователь может создать заметку."""
@@ -44,7 +40,8 @@ class TestLogic(TestCase):
         Note.objects.all().delete()
         response = self.author_client.post(url, self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
-        new_note = Note.objects.get(title=self.form_data['title'])
+        self.assertEqual(Note.objects.count(), 1)
+        new_note = Note.objects.get()
         self.assertEqual(new_note.title, self.form_data['title'])
         self.assertEqual(new_note.text, self.form_data['text'])
         self.assertEqual(new_note.slug, self.form_data['slug'])
@@ -78,36 +75,28 @@ class TestLogic(TestCase):
         то он формируется автоматически.
         """
         url = reverse('notes:add')
-        response = self.author_client.post(url, self.empty_slug_data)
+        form_data_empty_slug = self.form_data.copy()
+        form_data_empty_slug.pop('slug')
+        response = self.author_client.post(url, form_data_empty_slug)
         self.assertRedirects(response, reverse('notes:success'))
-        new_note = Note.objects.get(title=self.empty_slug_data['title'])
-        expected_slug = slugify(self.empty_slug_data['title'])
+        new_note = Note.objects.get(title=form_data_empty_slug['title'])
+        expected_slug = slugify(form_data_empty_slug['title'])
         self.assertEqual(new_note.slug, expected_slug)
 
     def test_user_can_edit_own_note(self):
         """Пользователь может редактировать свои заметки."""
         url = reverse('notes:edit', args=(self.note.slug,))
-        data = {
-            'title': 'Updated Note',
-            'text': 'Updated text',
-            'slug': 'slug'
-        }
-        response = self.author_client.post(url, data)
+        response = self.author_client.post(url, self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
         self.note.refresh_from_db()
-        self.assertEqual(self.note.title, data['title'])
-        self.assertEqual(self.note.text, data['text'])
-        self.assertEqual(self.note.slug, data['slug'])
+        self.assertEqual(self.note.title, self.form_data['title'])
+        self.assertEqual(self.note.text, self.form_data['text'])
+        self.assertEqual(self.note.slug, self.form_data['slug'])
 
     def test_user_cannot_edit_others_note(self):
         """Пользователь не может редактировать чужие заметки."""
         url = reverse('notes:edit', args=(self.note.slug,))
-        data = {
-            'title': 'Attempted Edit',
-            'text': 'Attempted text',
-            'slug': 'slug'
-        }
-        response = self.not_author_client.post(url, data)
+        response = self.not_author_client.post(url, self.form_data)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         note_from_db = Note.objects.get(id=self.note.id)
         self.assertEqual(note_from_db.title, self.note.title)
